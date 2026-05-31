@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import csv
 import io
 import os
@@ -30,6 +30,11 @@ def ensure_profile(conn, name):
 
 def get_profiles(conn):
     return conn.execute("SELECT id, name FROM profiles ORDER BY name COLLATE NOCASE").fetchall()
+
+
+def get_profile_id_by_name(conn, name):
+    profile = conn.execute("SELECT id FROM profiles WHERE lower(name) = lower(?)", (name,)).fetchone()
+    return profile["id"] if profile else None
 
 
 def get_active_profile_id(conn):
@@ -181,6 +186,20 @@ def uploaded_csv_rows(uploaded_file, fallback_deck_name, allow_unheaded_deck_col
     return parsed_rows
 
 
+def import_csv_rows(conn, rows, profile_id):
+    deck_ids = {}
+    for row in rows:
+        deck_id = deck_ids.get(row["deck_name"])
+        if deck_id is None:
+            deck_id = ensure_deck(conn, row["deck_name"], profile_id)
+            deck_ids[row["deck_name"]] = deck_id
+        conn.execute(
+            "INSERT INTO cards (term, definition, deck_id) VALUES (?, ?, ?)",
+            (row["term"], row["definition"], deck_id),
+        )
+    return deck_ids
+
+
 def get_all_decks(conn, profile_id):
     return conn.execute("""
         SELECT d.id, d.name, COUNT(c.id) AS card_count
@@ -311,6 +330,60 @@ def create_deck():
     return redirect(url_for("index"))
 
 
+@app.route("/api/decks/import-csv", methods=["POST"])
+def api_import_deck_csv():
+    if request.is_json:
+        payload = request.get_json(silent=True) or {}
+        profile_name = str(payload.get("profile") or "eve").strip()
+        submitted_deck_name = str(payload.get("deck_name") or "").strip()
+        csv_text = payload.get("csv") or payload.get("csv_text") or ""
+        csv_filename = str(payload.get("filename") or "Imported deck.csv").strip()
+        uploaded_file = io.BytesIO(str(csv_text).encode("utf-8"))
+        source_name = csv_filename
+    else:
+        profile_name = request.form.get("profile", "eve").strip()
+        submitted_deck_name = request.form.get("deck_name", "").strip()
+        uploaded_file = request.files.get("csv_file") or request.files.get("file")
+        source_name = uploaded_file.filename if uploaded_file else ""
+
+    if not profile_name:
+        return jsonify({"error": "profile is required"}), 400
+
+    if not uploaded_file:
+        return jsonify({"error": "csv_file is required"}), 400
+
+    deck_name = submitted_deck_name or os.path.splitext(os.path.basename(source_name or ""))[0].strip()
+    imported_rows = uploaded_csv_rows(
+        uploaded_file,
+        deck_name or "Imported deck",
+        allow_unheaded_deck_column=not submitted_deck_name,
+    )
+    if not imported_rows:
+        return jsonify({
+            "error": "No valid cards found. Use term,definition columns or deck,term,definition columns.",
+        }), 400
+
+    conn = get_db()
+    profile_id = get_profile_id_by_name(conn, profile_name)
+    if not profile_id:
+        conn.close()
+        return jsonify({"error": f"Unknown profile: {profile_name}"}), 404
+
+    deck_ids = import_csv_rows(conn, imported_rows, profile_id)
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "ok": True,
+        "profile": profile_name,
+        "cards_imported": len(imported_rows),
+        "decks": [
+            {"name": name, "id": deck_id}
+            for name, deck_id in deck_ids.items()
+        ],
+    }), 201
+
+
 @app.route("/decks/upload", methods=["POST"])
 def upload_deck_csv():
     uploaded_file = request.files.get("csv_file")
@@ -336,17 +409,7 @@ def upload_deck_csv():
 
     conn = get_db()
     active_profile_id = get_active_profile_id(conn)
-    deck_ids = {}
-    for row in imported_rows:
-        deck_id = deck_ids.get(row["deck_name"])
-        if deck_id is None:
-            deck_id = ensure_deck(conn, row["deck_name"], active_profile_id)
-            deck_ids[row["deck_name"]] = deck_id
-        conn.execute(
-            "INSERT INTO cards (term, definition, deck_id) VALUES (?, ?, ?)",
-            (row["term"], row["definition"], deck_id),
-        )
-
+    deck_ids = import_csv_rows(conn, imported_rows, active_profile_id)
     conn.commit()
     conn.close()
 
