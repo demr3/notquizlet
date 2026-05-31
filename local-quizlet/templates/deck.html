@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ deck.name }} - Lexlet{% endblock %}
+{% block content %}
+<section class="hero">
+    <div>
+        <p class="eyebrow">Deck</p>
+        <h1>{{ deck.name }}</h1>
+        <p class="hero-copy">Keep related vocabulary together so you can study one set at a time instead of mixing every card into one pool.</p>
+        <div class="hero-actions">
+            <a class="button button-primary" href="{{ url_for('study', deck_id=deck.id) }}">Study this deck</a>
+            <a class="button button-secondary" href="{{ url_for('add_card', deck_id=deck.id) }}">Add a card</a>
+        </div>
+    </div>
+    <aside class="hero-panel">
+        <p>Cards in deck</p>
+        <strong>{{ deck.card_count }}</strong>
+        <span>{{ "term" if deck.card_count == 1 else "terms" }} ready</span>
+    </aside>
+</section>
+
+<section class="section-header">
+    <div>
+        <p class="eyebrow">Cards</p>
+        <h2>{{ deck.name }} vocabulary</h2>
+    </div>
+    <form action="{{ url_for('delete_deck', deck_id=deck.id) }}" method="POST">
+        <button class="button button-ghost" type="submit">Delete deck</button>
+    </form>
+</section>
+
+{% if cards %}
+<section class="card-grid">
+    {% for card in cards %}
+    <article class="card-item">
+        <div class="card-meta">
+            <span class="chip">Card</span>
+            <form action="{{ url_for('delete_card', card_id=card.id) }}" method="POST">
+                <button class="icon-button" type="submit">Delete</button>
+            </form>
+        </div>
+        <h3>{{ card.term }}</h3>
+        <p>{{ card.definition }}</p>
+    </article>
+    {% endfor %}
+</section>
+{% else %}
+<section class="empty-state">
+    <p class="eyebrow">No cards yet</p>
+    <h2>This deck is empty.</h2>
+    <p>Add terms here so this vocabulary set is ready for study and test mode.</p>
+    <a class="button button-primary" href="{{ url_for('add_card', deck_id=deck.id) }}">Add first card</a>
+</section>
+{% endif %}
+{% endblock %}

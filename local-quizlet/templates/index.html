@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Library - Lexlet{% endblock %}
+{% block content %}
+<section class="hero">
+    <div>
+        <p class="eyebrow">Deck library</p>
+        <h1>Organize vocabulary into focused decks.</h1>
+        <p class="hero-copy">Create separate sets for classes, languages, chapters, or exams so you can practice the right words at the right time.</p>
+        <div class="hero-actions">
+            <a class="button button-primary" href="{{ url_for('add_card') }}">Add a card</a>
+            <a class="button button-secondary" href="{{ url_for('study') }}">Choose a deck to study</a>
+        </div>
+    </div>
+    <aside class="hero-panel">
+        <p>Total library</p>
+        <strong>{{ decks|length }}</strong>
+        <span>{{ total_cards }} {{ "card" if total_cards == 1 else "cards" }} across all decks</span>
+    </aside>
+</section>
+
+<section class="split-layout compact-split">
+    <div>
+        <p class="eyebrow">Create deck</p>
+        <h2>Start a new vocabulary set.</h2>
+        <p class="section-copy">Decks keep terms grouped by topic so your study sessions stay focused.</p>
+    </div>
+    <section class="form-panel">
+        <form class="stack-form" action="{{ url_for('create_deck') }}" method="POST">
+            <label>
+                <span>Deck name</span>
+                <input name="name" placeholder="ex. Spanish Chapter 3" required>
+            </label>
+            <div class="form-actions">
+                <button class="button button-primary" type="submit">Create deck</button>
+                <a class="button button-secondary" href="{{ url_for('test') }}">Choose a deck to test</a>
+            </div>
+        </form>
+    </section>
+</section>
+
+<section class="section-header">
+    <div>
+        <p class="eyebrow">Library</p>
+        <h2>Your decks</h2>
+    </div>
+</section>
+
+{% if decks %}
+<section class="deck-grid">
+    {% for deck in decks %}
+    <article class="deck-card deck-card-clickable" data-href="{{ url_for('deck_detail', deck_id=deck.id) }}" tabindex="0" role="link" aria-label="Open {{ deck.name }} deck">
+        <div class="card-meta">
+            <span class="chip">Deck</span>
+            <span class="deck-count">{{ deck.card_count }} {{ "card" if deck.card_count == 1 else "cards" }}</span>
+        </div>
+        <h3>{{ deck.name }}</h3>
+        <p>Study this set on its own, test recall, or keep adding terms to grow the deck.</p>
+        <div class="deck-actions">
+            <a class="button button-primary" href="{{ url_for('deck_detail', deck_id=deck.id) }}">Open deck</a>
+            <a class="button button-secondary" href="{{ url_for('study', deck_id=deck.id) }}">Study</a>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% else %}
+<section class="empty-state">
+    <p class="eyebrow">No decks yet</p>
+    <h2>Start your first deck.</h2>
+    <p>Create a named vocabulary set so your flashcards are grouped instead of all mixed together.</p>
+    <a class="button button-primary" href="{{ url_for('add_card') }}">Create first deck</a>
+</section>
+{% endif %}
+<script>
+document.querySelectorAll('.deck-card-clickable').forEach((card) => {
+    const openDeck = () => {
+        const href = card.dataset.href;
+        if (href) {
+            window.location.href = href;
+        }
+    };
+
+    card.addEventListener('click', (event) => {
+        if (event.target.closest('a, button, form, input, textarea, select')) {
+            return;
+        }
+        openDeck();
+    });
+
+    card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openDeck();
+        }
+    });
+});
+</script>
+{% endblock %}

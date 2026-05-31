@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lexlet{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="page-shell">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('index') }}">
+            <span class="brand-mark">L</span>
+            <span>
+                <strong>Lexlet</strong>
+                <small>Vocabulary practice</small>
+            </span>
+        </a>
+
+        <nav class="nav nav-desktop">
+            <a class="{% if request.endpoint in ['index', 'deck_detail'] %}is-active{% endif %}" href="{{ url_for('index') }}">Library</a>
+            <a class="{% if request.endpoint == 'add_card' %}is-active{% endif %}" href="{{ url_for('add_card') }}">Add</a>
+            <a class="{% if request.endpoint == 'study' %}is-active{% endif %}" href="{{ url_for('study') }}">Study</a>
+            <a class="{% if request.endpoint == 'test' %}is-active{% endif %}" href="{{ url_for('test') }}">Test</a>
+        </nav>
+
+        <form class="profile-switcher" action="{{ url_for('switch_profile') }}" method="POST">
+            <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+            <label for="profile_id">Profile</label>
+            <select id="profile_id" name="profile_id" onchange="this.form.submit()">
+                {% for profile in profiles %}
+                <option value="{{ profile.id }}" {% if active_profile and active_profile.id == profile.id %}selected{% endif %}>
+                    {{ profile.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+    </header>
+
+    <main class="page-content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<nav class="mobile-tabbar" aria-label="Primary">
+    <a class="mobile-tab {% if request.endpoint in ['index', 'deck_detail'] %}is-active{% endif %}" href="{{ url_for('index') }}">
+        <span class="mobile-tab-icon">L</span>
+        <span>Library</span>
+    </a>
+    <a class="mobile-tab {% if request.endpoint == 'add_card' %}is-active{% endif %}" href="{{ url_for('add_card') }}">
+        <span class="mobile-tab-icon">+</span>
+        <span>Add</span>
+    </a>
+    <a class="mobile-tab {% if request.endpoint == 'study' %}is-active{% endif %}" href="{{ url_for('study') }}">
+        <span class="mobile-tab-icon">S</span>
+        <span>Study</span>
+    </a>
+    <a class="mobile-tab {% if request.endpoint == 'test' %}is-active{% endif %}" href="{{ url_for('test') }}">
+        <span class="mobile-tab-icon">T</span>
+        <span>Test</span>
+    </a>
+</nav>
+</body>
+</html>

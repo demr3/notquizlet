@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Study - Lexlet{% endblock %}
+{% block content %}
+{% if not selected_deck %}
+<section class="section-header">
+    <div>
+        <p class="eyebrow">Study mode</p>
+        <h1>Choose a deck before you study.</h1>
+        <p class="section-copy">Pick one vocabulary set so your session stays focused on a single topic.</p>
+    </div>
+    <a class="button button-ghost" href="{{ url_for('index') }}">Back to library</a>
+</section>
+
+{% if decks %}
+<section class="deck-grid">
+    {% for deck in decks %}
+    <article class="deck-card">
+        <div class="card-meta">
+            <span class="chip">Deck</span>
+            <span class="deck-count">{{ deck.card_count }} {{ "card" if deck.card_count == 1 else "cards" }}</span>
+        </div>
+        <h3>{{ deck.name }}</h3>
+        <p>Open this set in study mode and flip through only the vocabulary that belongs to it.</p>
+        <div class="deck-actions">
+            <a class="button button-primary" href="{{ url_for('study', deck_id=deck.id) }}">Study deck</a>
+            <a class="button button-secondary" href="{{ url_for('deck_detail', deck_id=deck.id) }}">View deck</a>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% else %}
+<section class="empty-state">
+    <p class="eyebrow">Nothing to study</p>
+    <h2>No decks yet.</h2>
+    <p>Create a deck first, then add cards to start a study session.</p>
+    <a class="button button-primary" href="{{ url_for('add_card') }}">Add cards</a>
+</section>
+{% endif %}
+{% else %}
+<section class="section-header">
+    <div>
+        <p class="eyebrow">Study mode</p>
+        <h1>{{ selected_deck.name }}</h1>
+        <p class="section-copy">Tap cards to reveal the answer. This session only uses cards from the selected deck.</p>
+    </div>
+    <div class="study-badge">{{ cards|length }} {{ "card" if cards|length == 1 else "cards" }}</div>
+</section>
+
+{% if cards %}
+<section class="study-grid">
+    {% for card in cards %}
+    <button class="study-card" type="button" aria-label="Flip flashcard">
+        <span class="study-card-inner">
+            <span class="study-face study-front">
+                <small>Prompt</small>
+                <strong>{{ card.definition }}</strong>
+                <em>Click to reveal</em>
+            </span>
+            <span class="study-face study-back">
+                <small>Answer</small>
+                <strong>{{ card.term }}</strong>
+                <em>Click to hide</em>
+            </span>
+        </span>
+    </button>
+    {% endfor %}
+</section>
+{% else %}
+<section class="empty-state">
+    <p class="eyebrow">Nothing to study</p>
+    <h2>This deck is empty.</h2>
+    <p>Add vocabulary to this deck before starting a study session.</p>
+    <a class="button button-primary" href="{{ url_for('add_card', deck_id=selected_deck.id) }}">Add cards</a>
+</section>
+{% endif %}
+{% endif %}
+
+<script>
+document.querySelectorAll('.study-card').forEach((card) => {
+    card.addEventListener('click', () => card.classList.toggle('is-flipped'));
+});
+</script>
+{% endblock %}
