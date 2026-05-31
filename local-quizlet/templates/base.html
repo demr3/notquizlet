@@ -44,6 +44,15 @@
     </header>
 
     <main class="page-content">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <section class="flash-stack" aria-live="polite">
+            {% for message in messages %}
+            <p class="flash-message">{{ message }}</p>
+            {% endfor %}
+        </section>
+        {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </main>
 </div>

@@ -38,6 +38,29 @@
     </section>
 </section>
 
+<section class="split-layout compact-split">
+    <div>
+        <p class="eyebrow">Import deck</p>
+        <h2>Upload cards from a CSV.</h2>
+        <p class="section-copy">Use term and definition columns for one deck, or include a deck column to import multiple decks at once.</p>
+    </div>
+    <section class="form-panel">
+        <form class="stack-form" action="{{ url_for('upload_deck_csv') }}" method="POST" enctype="multipart/form-data">
+            <label>
+                <span>Deck name</span>
+                <input name="deck_name" placeholder="Defaults to the CSV file name">
+            </label>
+            <label>
+                <span>CSV file</span>
+                <input type="file" name="csv_file" accept=".csv,text/csv" required>
+            </label>
+            <div class="form-actions">
+                <button class="button button-primary" type="submit">Upload CSV</button>
+            </div>
+        </form>
+    </section>
+</section>
+
 <section class="section-header">
     <div>
         <p class="eyebrow">Library</p>

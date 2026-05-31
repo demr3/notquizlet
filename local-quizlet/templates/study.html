@@ -76,8 +76,26 @@
 {% endif %}
 
 <script>
-document.querySelectorAll('.study-card').forEach((card) => {
-    card.addEventListener('click', () => card.classList.toggle('is-flipped'));
+const studyCards = Array.from(document.querySelectorAll('.study-card'));
+
+studyCards.forEach((card) => {
+    const flipCard = () => card.classList.toggle('is-flipped');
+
+    card.addEventListener('click', flipCard);
+    card.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') {
+            return;
+        }
+
+        event.preventDefault();
+        flipCard();
+    });
 });
+
+if (studyCards.length) {
+    window.addEventListener('load', () => {
+        studyCards[0].focus({ preventScroll: true });
+    });
+}
 </script>
 {% endblock %}

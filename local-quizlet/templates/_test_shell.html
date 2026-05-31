@@ -1,0 +1,109 @@
+<section class="test-shell">
+    <div class="section-header test-header">
+        <div>
+            <p class="eyebrow">Recall test</p>
+            <h1>{% if selected_deck %}{{ selected_deck.name }}{% else %}Choose a deck before you test{% endif %}</h1>
+            <p class="section-copy">{% if selected_deck %}Your answer is checked with a similarity score, so small typos can still pass.{% else %}Pick one deck so your test session stays on a single vocabulary set.{% endif %}</p>
+        </div>
+        <a class="button button-ghost" href="{% if selected_deck %}{{ url_for('study', deck_id=selected_deck.id) }}{% else %}{{ url_for('study') }}{% endif %}">Switch to study mode</a>
+    </div>
+
+    {% if not selected_deck %}
+    {% if decks %}
+    <section class="deck-grid">
+        {% for deck in decks %}
+        <article class="deck-card">
+            <div class="card-meta">
+                <span class="chip">Deck</span>
+                <span class="deck-count">{{ deck.card_count }} {{ "card" if deck.card_count == 1 else "cards" }}</span>
+            </div>
+            <h3>{{ deck.name }}</h3>
+            <p>Run recall checks only against this vocabulary set.</p>
+            <div class="deck-actions">
+                <a class="button button-primary" href="{{ url_for('test', deck_id=deck.id) }}">Test deck</a>
+                <a class="button button-secondary" href="{{ url_for('deck_detail', deck_id=deck.id) }}">View deck</a>
+            </div>
+        </article>
+        {% endfor %}
+    </section>
+    {% else %}
+    <section class="empty-state">
+        <p class="eyebrow">Nothing to test</p>
+        <h2>No decks yet.</h2>
+        <p>Create a deck and add some cards before you start testing recall.</p>
+        <a class="button button-primary" href="{{ url_for('add_card') }}">Add cards</a>
+    </section>
+    {% endif %}
+    {% elif session_complete %}
+    <section class="result-banner result-good">
+        <strong>Session complete</strong>
+        <span>{{ correct_count }} / {{ total_cards }} correct</span>
+        <p>You finished this deck's current test run.</p>
+    </section>
+    <section class="prompt-card">
+        <p class="prompt-label">Finished</p>
+        <h2>{{ correct_count }} / {{ total_cards }} correct</h2>
+        <div class="form-actions">
+            <a class="button button-primary" href="{{ url_for('test', deck_id=selected_deck.id) }}">Start again</a>
+            <a class="button button-secondary" href="{{ url_for('deck_detail', deck_id=selected_deck.id) }}">Back to deck</a>
+        </div>
+    </section>
+    {% elif not card %}
+    <section class="empty-state">
+        <p class="eyebrow">Nothing to test</p>
+        <h2>This deck is empty.</h2>
+        <p>Add vocabulary here first, then come back to run a recall test.</p>
+        <a class="button button-primary" href="{{ url_for('add_card', deck_id=selected_deck.id) }}">Add cards</a>
+    </section>
+    {% else %}
+    <section class="result-banner {{ 'result-good' if correct else 'result-bad' if result else '' }}">
+        <strong>Score</strong>
+        <span>{{ correct_count }} / {{ total_cards }} correct</span>
+        <p>{{ answered_count }} of {{ total_cards }} answered</p>
+    </section>
+
+    <section class="prompt-card" id="test-prompt">
+        <p class="prompt-label">{% if result %}Answer review{% else %}Definition{% endif %}</p>
+        <h2>{{ card.definition }}</h2>
+
+        {% if result %}
+        <div class="answer-review">
+            <p class="review-status {{ 'review-good' if correct else 'review-bad' }}">
+                {{ "Correct" if correct else "Not quite" }}{% if score %} &middot; {{ score }}% match{% endif %}
+            </p>
+            <p><strong>Your answer:</strong> {{ user_answer }}</p>
+            <p><strong>Correct answer:</strong> {{ real_answer }}</p>
+        </div>
+
+        <form class="stack-form continue-form" method="POST">
+            <input type="hidden" name="action" value="continue">
+            <input type="hidden" name="deck_id" value="{{ selected_deck.id }}">
+            <input type="hidden" name="remaining_order" value="{{ remaining_order }}">
+            <input type="hidden" name="correct_count" value="{{ correct_count }}">
+            <input type="hidden" name="answered_count" value="{{ answered_count }}">
+            <div class="form-actions">
+                <button class="button button-primary" type="submit">Continue</button>
+                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id) }}">Restart deck</a>
+            </div>
+        </form>
+        {% else %}
+        <form class="stack-form" method="POST">
+            <input type="hidden" name="action" value="check">
+            <input type="hidden" name="deck_id" value="{{ selected_deck.id }}">
+            <input type="hidden" name="card_id" value="{{ card.id }}">
+            <input type="hidden" name="remaining_order" value="{{ remaining_order }}">
+            <input type="hidden" name="correct_count" value="{{ correct_count }}">
+            <input type="hidden" name="answered_count" value="{{ answered_count }}">
+            <label>
+                <span>Your answer</span>
+                <input name="answer" placeholder="Type the matching term" autocomplete="off" autofocus required>
+            </label>
+            <div class="form-actions">
+                <button class="button button-primary" type="submit">Check answer</button>
+                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id) }}">Restart deck</a>
+            </div>
+        </form>
+        {% endif %}
+    </section>
+    {% endif %}
+</section>

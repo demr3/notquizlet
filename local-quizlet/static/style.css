@@ -200,6 +200,24 @@ h3 {
     padding-top: 30px;
 }
 
+.flash-stack {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.flash-message {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding: 14px 16px;
+    border: 1px solid rgba(114, 156, 255, 0.2);
+    border-radius: 16px;
+    background: rgba(19, 36, 64, 0.92);
+    color: var(--accent);
+    box-shadow: var(--shadow);
+}
+
 .hero,
 .split-layout,
 .section-header,

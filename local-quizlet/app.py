@@ -1,4 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+import csv
+import io
+import os
 import sqlite3
 import random
 from difflib import SequenceMatcher
@@ -6,6 +9,9 @@ from difflib import SequenceMatcher
 app = Flask(__name__)
 app.secret_key = "local-lexlet-profile-switcher"
 DB_NAME = "flashcards.db"
+DECK_HEADERS = {"deck", "deck name", "deck_name", "set", "set name"}
+TERM_HEADERS = {"term", "front", "word", "question"}
+DEFINITION_HEADERS = {"definition", "definition / clue", "clue", "back", "answer", "meaning"}
 
 
 def get_db():
@@ -104,6 +110,77 @@ def ensure_deck(conn, name, profile_id):
     return cursor.lastrowid
 
 
+def normalize_csv_header(value):
+    return (value or "").strip().lower().replace("-", " ").replace("_", " ")
+
+
+def find_csv_column(headers, accepted_names):
+    for index, header in enumerate(headers):
+        if normalize_csv_header(header) in accepted_names:
+            return index
+    return None
+
+
+def uploaded_csv_rows(uploaded_file, fallback_deck_name, allow_unheaded_deck_column=False):
+    raw = uploaded_file.read()
+    if not raw:
+        return []
+
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = raw.decode("latin-1")
+
+    sample = text[:2048]
+    try:
+        dialect = csv.Sniffer().sniff(sample)
+    except csv.Error:
+        dialect = csv.excel
+
+    rows = [
+        [cell.strip() for cell in row]
+        for row in csv.reader(io.StringIO(text), dialect)
+        if any(cell.strip() for cell in row)
+    ]
+    if not rows:
+        return []
+
+    first_row = rows[0]
+    deck_index = find_csv_column(first_row, DECK_HEADERS)
+    term_index = find_csv_column(first_row, TERM_HEADERS)
+    definition_index = find_csv_column(first_row, DEFINITION_HEADERS)
+    has_header = term_index is not None and definition_index is not None
+
+    if has_header:
+        data_rows = rows[1:]
+    elif len(first_row) >= 3 and allow_unheaded_deck_column:
+        deck_index, term_index, definition_index = 0, 1, 2
+        data_rows = rows
+    else:
+        deck_index, term_index, definition_index = None, 0, 1
+        data_rows = rows
+
+    parsed_rows = []
+    for row in data_rows:
+        if len(row) <= max(term_index, definition_index):
+            continue
+
+        term = row[term_index].strip()
+        definition = row[definition_index].strip()
+        deck_name = fallback_deck_name
+        if deck_index is not None and len(row) > deck_index and row[deck_index].strip():
+            deck_name = row[deck_index].strip()
+
+        if term and definition and deck_name:
+            parsed_rows.append({
+                "deck_name": deck_name,
+                "term": term,
+                "definition": definition,
+            })
+
+    return parsed_rows
+
+
 def get_all_decks(conn, profile_id):
     return conn.execute("""
         SELECT d.id, d.name, COUNT(c.id) AS card_count
@@ -140,11 +217,15 @@ def parse_card_order(raw_order):
     return card_ids
 
 
+def render_test_template(**context):
+    template = "_test_shell.html" if request.headers.get("X-Requested-With") == "XMLHttpRequest" else "test.html"
+    return render_template(template, **context)
+
+
 def render_test_session(decks, selected_deck, card, total_cards, correct_count, answered_count,
                         remaining_order="", result=False, correct=None, user_answer="",
                         real_answer="", score=0, session_complete=False):
-    return render_template(
-        "test.html",
+    return render_test_template(
         decks=decks,
         selected_deck=selected_deck,
         card=card,
@@ -227,6 +308,54 @@ def create_deck():
         conn.commit()
         conn.close()
         return redirect(url_for("deck_detail", deck_id=deck_id))
+    return redirect(url_for("index"))
+
+
+@app.route("/decks/upload", methods=["POST"])
+def upload_deck_csv():
+    uploaded_file = request.files.get("csv_file")
+    if not uploaded_file or not uploaded_file.filename:
+        flash("Choose a CSV file to upload.")
+        return redirect(url_for("index"))
+
+    if not uploaded_file.filename.lower().endswith(".csv"):
+        flash("Upload a .csv file.")
+        return redirect(url_for("index"))
+
+    submitted_deck_name = request.form.get("deck_name", "").strip()
+    deck_name = submitted_deck_name or os.path.splitext(os.path.basename(uploaded_file.filename))[0].strip()
+
+    imported_rows = uploaded_csv_rows(
+        uploaded_file,
+        deck_name or "Imported deck",
+        allow_unheaded_deck_column=not submitted_deck_name,
+    )
+    if not imported_rows:
+        flash("No valid cards found. Use term,definition columns or deck,term,definition columns.")
+        return redirect(url_for("index"))
+
+    conn = get_db()
+    active_profile_id = get_active_profile_id(conn)
+    deck_ids = {}
+    for row in imported_rows:
+        deck_id = deck_ids.get(row["deck_name"])
+        if deck_id is None:
+            deck_id = ensure_deck(conn, row["deck_name"], active_profile_id)
+            deck_ids[row["deck_name"]] = deck_id
+        conn.execute(
+            "INSERT INTO cards (term, definition, deck_id) VALUES (?, ?, ?)",
+            (row["term"], row["definition"], deck_id),
+        )
+
+    conn.commit()
+    conn.close()
+
+    deck_label = "deck" if len(deck_ids) == 1 else "decks"
+    card_label = "card" if len(imported_rows) == 1 else "cards"
+    flash(f"Imported {len(imported_rows)} {card_label} into {len(deck_ids)} {deck_label}.")
+
+    if len(deck_ids) == 1:
+        return redirect(url_for("deck_detail", deck_id=next(iter(deck_ids.values()))))
     return redirect(url_for("index"))
 
 
@@ -322,12 +451,12 @@ def test():
 
     if not selected_deck:
         conn.close()
-        return render_template("test.html", decks=decks, selected_deck=None, result=False)
+        return render_test_template(decks=decks, selected_deck=None, result=False)
 
     cards = list(conn.execute("SELECT * FROM cards WHERE deck_id = ?", (selected_deck_id,)).fetchall())
     conn.close()
     if not cards:
-        return render_template("test.html", decks=decks, selected_deck=selected_deck, result=False, card=None)
+        return render_test_template(decks=decks, selected_deck=selected_deck, result=False, card=None)
 
     cards_by_id = {card["id"]: card for card in cards}
 
