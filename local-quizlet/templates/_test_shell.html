@@ -5,7 +5,7 @@
             <h1>{% if selected_deck %}{{ selected_deck.name }}{% else %}Choose a deck before you test{% endif %}</h1>
             <p class="section-copy">{% if selected_deck %}Your answer is checked with a similarity score, so small typos can still pass.{% else %}Pick one deck so your test session stays on a single vocabulary set.{% endif %}</p>
         </div>
-        <a class="button button-ghost" href="{% if selected_deck %}{{ url_for('study', deck_id=selected_deck.id) }}{% else %}{{ url_for('study') }}{% endif %}">Switch to study mode</a>
+        <a class="button button-ghost" href="{% if selected_deck %}{{ url_for('study', deck_id=selected_deck.id, selected_card_ids=selected_card_ids) }}{% else %}{{ url_for('study') }}{% endif %}">Switch to study mode</a>
     </div>
 
     {% if not selected_deck %}
@@ -44,7 +44,7 @@
         <p class="prompt-label">Finished</p>
         <h2>{{ correct_count }} / {{ total_cards }} correct</h2>
         <div class="form-actions">
-            <a class="button button-primary" href="{{ url_for('test', deck_id=selected_deck.id) }}">Start again</a>
+            <a class="button button-primary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids) }}">Start again</a>
             <a class="button button-secondary" href="{{ url_for('deck_detail', deck_id=selected_deck.id) }}">Back to deck</a>
         </div>
     </section>
@@ -78,18 +78,20 @@
         <form class="stack-form continue-form" method="POST">
             <input type="hidden" name="action" value="continue">
             <input type="hidden" name="deck_id" value="{{ selected_deck.id }}">
+            <input type="hidden" name="selected_card_ids" value="{{ selected_card_ids }}">
             <input type="hidden" name="remaining_order" value="{{ remaining_order }}">
             <input type="hidden" name="correct_count" value="{{ correct_count }}">
             <input type="hidden" name="answered_count" value="{{ answered_count }}">
             <div class="form-actions">
                 <button class="button button-primary" type="submit">Continue</button>
-                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id) }}">Restart deck</a>
+                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids) }}">Restart deck</a>
             </div>
         </form>
         {% else %}
         <form class="stack-form" method="POST">
             <input type="hidden" name="action" value="check">
             <input type="hidden" name="deck_id" value="{{ selected_deck.id }}">
+            <input type="hidden" name="selected_card_ids" value="{{ selected_card_ids }}">
             <input type="hidden" name="card_id" value="{{ card.id }}">
             <input type="hidden" name="remaining_order" value="{{ remaining_order }}">
             <input type="hidden" name="correct_count" value="{{ correct_count }}">
@@ -100,7 +102,7 @@
             </label>
             <div class="form-actions">
                 <button class="button button-primary" type="submit">Check answer</button>
-                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id) }}">Restart deck</a>
+                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids) }}">Restart deck</a>
             </div>
         </form>
         {% endif %}

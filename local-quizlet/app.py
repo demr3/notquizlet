@@ -236,6 +236,31 @@ def parse_card_order(raw_order):
     return card_ids
 
 
+def get_requested_card_ids():
+    raw_ids = request.values.getlist("card_ids")
+    raw_selected_ids = request.values.get("selected_card_ids", "")
+    if raw_selected_ids:
+        raw_ids.extend(raw_selected_ids.split(","))
+
+    card_ids = []
+    seen_ids = set()
+    for raw_id in raw_ids:
+        raw_id = str(raw_id).strip()
+        if raw_id.isdigit():
+            card_id = int(raw_id)
+            if card_id not in seen_ids:
+                card_ids.append(card_id)
+                seen_ids.add(card_id)
+    return card_ids
+
+
+def filter_selected_cards(cards, selected_card_ids):
+    if not selected_card_ids:
+        return cards
+    selected_ids = set(selected_card_ids)
+    return [card for card in cards if card["id"] in selected_ids]
+
+
 def render_test_template(**context):
     template = "_test_shell.html" if request.headers.get("X-Requested-With") == "XMLHttpRequest" else "test.html"
     return render_template(template, **context)
@@ -243,7 +268,7 @@ def render_test_template(**context):
 
 def render_test_session(decks, selected_deck, card, total_cards, correct_count, answered_count,
                         remaining_order="", result=False, correct=None, user_answer="",
-                        real_answer="", score=0, session_complete=False):
+                        real_answer="", score=0, session_complete=False, selected_card_ids=""):
     return render_test_template(
         decks=decks,
         selected_deck=selected_deck,
@@ -258,6 +283,7 @@ def render_test_session(decks, selected_deck, card, total_cards, correct_count, 
         real_answer=real_answer,
         score=score,
         session_complete=session_complete,
+        selected_card_ids=selected_card_ids,
     )
 
 
@@ -494,14 +520,21 @@ def study():
     active_profile_id = get_active_profile_id(conn)
     decks = get_all_decks(conn, active_profile_id)
     selected_deck_id = request.args.get("deck_id", type=int)
+    selected_card_ids = get_requested_card_ids()
     selected_deck = get_deck(conn, selected_deck_id, active_profile_id) if selected_deck_id else None
     cards = []
     if selected_deck:
         cards = conn.execute("SELECT * FROM cards WHERE deck_id = ?", (selected_deck_id,)).fetchall()
     conn.close()
-    cards = list(cards)
+    cards = filter_selected_cards(list(cards), selected_card_ids)
     random.shuffle(cards)
-    return render_template("study.html", cards=cards, decks=decks, selected_deck=selected_deck)
+    return render_template(
+        "study.html",
+        cards=cards,
+        decks=decks,
+        selected_deck=selected_deck,
+        selected_card_ids=",".join(str(card_id) for card_id in selected_card_ids),
+    )
 
 
 @app.route("/test", methods=["GET", "POST"])
@@ -510,16 +543,27 @@ def test():
     active_profile_id = get_active_profile_id(conn)
     decks = get_all_decks(conn, active_profile_id)
     selected_deck_id = request.values.get("deck_id", type=int)
+    selected_card_ids = get_requested_card_ids()
+    selected_card_ids_value = ",".join(str(card_id) for card_id in selected_card_ids)
     selected_deck = get_deck(conn, selected_deck_id, active_profile_id) if selected_deck_id else None
 
     if not selected_deck:
         conn.close()
         return render_test_template(decks=decks, selected_deck=None, result=False)
 
-    cards = list(conn.execute("SELECT * FROM cards WHERE deck_id = ?", (selected_deck_id,)).fetchall())
+    cards = filter_selected_cards(
+        list(conn.execute("SELECT * FROM cards WHERE deck_id = ?", (selected_deck_id,)).fetchall()),
+        selected_card_ids,
+    )
     conn.close()
     if not cards:
-        return render_test_template(decks=decks, selected_deck=selected_deck, result=False, card=None)
+        return render_test_template(
+            decks=decks,
+            selected_deck=selected_deck,
+            result=False,
+            card=None,
+            selected_card_ids=selected_card_ids_value,
+        )
 
     cards_by_id = {card["id"]: card for card in cards}
 
@@ -541,6 +585,7 @@ def test():
                     session_complete=True,
                     result=True,
                     correct=True,
+                    selected_card_ids=selected_card_ids_value,
                 )
 
             next_card = cards_by_id.get(remaining_order[0])
@@ -555,6 +600,7 @@ def test():
                 correct_count=correct_count,
                 answered_count=answered_count,
                 remaining_order=",".join(str(existing_id) for existing_id in remaining_order[1:]),
+                selected_card_ids=selected_card_ids_value,
             )
 
         card_id = int(request.form["card_id"])
@@ -583,6 +629,7 @@ def test():
             real_answer=card["term"],
             score=round(score * 100),
             session_complete=False,
+            selected_card_ids=selected_card_ids_value,
         )
 
     card_order = [card["id"] for card in cards]
@@ -596,6 +643,7 @@ def test():
         correct_count=0,
         answered_count=0,
         remaining_order=",".join(str(existing_id) for existing_id in card_order[1:]),
+        selected_card_ids=selected_card_ids_value,
     )
 
 

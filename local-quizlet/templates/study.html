@@ -41,9 +41,13 @@
     <div>
         <p class="eyebrow">Study mode</p>
         <h1>{{ selected_deck.name }}</h1>
-        <p class="section-copy">Tap cards to reveal the answer. This session only uses cards from the selected deck.</p>
+        <p class="section-copy">Tap cards to reveal the answer. This session uses your selected words from the deck.</p>
     </div>
-    <div class="study-badge">{{ cards|length }} {{ "card" if cards|length == 1 else "cards" }}</div>
+    <div class="study-actions">
+        <div class="study-badge">{{ cards|length }} {{ "card" if cards|length == 1 else "cards" }}</div>
+        <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids) }}">Test selected</a>
+        <a class="button button-ghost" href="{{ url_for('deck_detail', deck_id=selected_deck.id) }}">Change selection</a>
+    </div>
 </section>
 
 {% if cards %}
