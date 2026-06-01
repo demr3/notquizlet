@@ -1,3 +1,3 @@
 local-quizlet/flashcards.db
-local-quizlet/__pycache__/
+local-quizlet/__pycache__/*
 local-quizlet/output.log
