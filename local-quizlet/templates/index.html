@@ -7,7 +7,7 @@
         <h1>Organize vocabulary into focused decks.</h1>
         <p class="hero-copy">Create separate sets for classes, languages, chapters, or exams so you can practice the right words at the right time.</p>
         <div class="hero-actions">
-            <a class="button button-primary" href="{{ url_for('add_card') }}">Add a card</a>
+            <a class="button button-primary" href="{{ url_for('add_card') }}">Create or import deck</a>
             <a class="button button-secondary" href="{{ url_for('study') }}">Choose a deck to study</a>
         </div>
     </div>
@@ -16,49 +16,6 @@
         <strong>{{ decks|length }}</strong>
         <span>{{ total_cards }} {{ "card" if total_cards == 1 else "cards" }} across all decks</span>
     </aside>
-</section>
-
-<section class="split-layout compact-split">
-    <div>
-        <p class="eyebrow">Create deck</p>
-        <h2>Start a new vocabulary set.</h2>
-        <p class="section-copy">Decks keep terms grouped by topic so your study sessions stay focused.</p>
-    </div>
-    <section class="form-panel">
-        <form class="stack-form" action="{{ url_for('create_deck') }}" method="POST">
-            <label>
-                <span>Deck name</span>
-                <input name="name" placeholder="ex. Spanish Chapter 3" required>
-            </label>
-            <div class="form-actions">
-                <button class="button button-primary" type="submit">Create deck</button>
-                <a class="button button-secondary" href="{{ url_for('test') }}">Choose a deck to test</a>
-            </div>
-        </form>
-    </section>
-</section>
-
-<section class="split-layout compact-split">
-    <div>
-        <p class="eyebrow">Import deck</p>
-        <h2>Upload cards from a CSV.</h2>
-        <p class="section-copy">Use term and definition columns for one deck, or include a deck column to import multiple decks at once.</p>
-    </div>
-    <section class="form-panel">
-        <form class="stack-form" action="{{ url_for('upload_deck_csv') }}" method="POST" enctype="multipart/form-data">
-            <label>
-                <span>Deck name</span>
-                <input name="deck_name" placeholder="Defaults to the CSV file name">
-            </label>
-            <label>
-                <span>CSV file</span>
-                <input type="file" name="csv_file" accept=".csv,text/csv" required>
-            </label>
-            <div class="form-actions">
-                <button class="button button-primary" type="submit">Upload CSV</button>
-            </div>
-        </form>
-    </section>
 </section>
 
 <section class="section-header">

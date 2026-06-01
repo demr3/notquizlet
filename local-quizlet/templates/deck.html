@@ -4,11 +4,25 @@
 <section class="hero">
     <div>
         <p class="eyebrow">Deck</p>
-        <h1>{{ deck.name }}</h1>
+        <div class="deck-title-row">
+            <h1>{{ deck.name }}</h1>
+            <details class="deck-settings">
+                <summary class="settings-icon-button" aria-label="Deck settings" title="Deck settings">
+                    <span aria-hidden="true">&#9881;</span>
+                </summary>
+                <form class="deck-settings-panel" action="{{ url_for('rename_deck', deck_id=deck.id) }}" method="POST">
+                    <label>
+                        <span>Deck name</span>
+                        <input type="text" name="name" value="{{ deck.name }}" required>
+                    </label>
+                    <button class="button button-primary" type="submit">Save name</button>
+                </form>
+            </details>
+        </div>
         <p class="hero-copy">Keep related vocabulary together so you can study one set at a time instead of mixing every card into one pool.</p>
         <div class="hero-actions">
             <a class="button button-primary" href="{{ url_for('study', deck_id=deck.id) }}">Study this deck</a>
-            <a class="button button-secondary" href="{{ url_for('add_card', deck_id=deck.id) }}">Add a card</a>
+            <a class="button button-secondary" href="#add-card">Add a card</a>
         </div>
     </div>
     <aside class="hero-panel">
@@ -16,6 +30,30 @@
         <strong>{{ deck.card_count }}</strong>
         <span>{{ "term" if deck.card_count == 1 else "terms" }} ready</span>
     </aside>
+</section>
+
+<section class="split-layout compact-split" id="add-card">
+    <div class="info-panel">
+        <p class="eyebrow">New card</p>
+        <h1>Add to this deck.</h1>
+        <p>Add a term and its definition directly to {{ deck.name }}.</p>
+    </div>
+    <section class="form-panel">
+        <form class="stack-form" action="{{ url_for('add_card') }}" method="POST">
+            <input type="hidden" name="deck_id" value="{{ deck.id }}">
+            <label>
+                <span>Term</span>
+                <input name="term" placeholder="ex. ephemeral" required>
+            </label>
+            <label>
+                <span>Definition / clue</span>
+                <textarea name="definition" placeholder="Short-lived; lasting for a very brief time." required></textarea>
+            </label>
+            <div class="form-actions">
+                <button class="button button-primary" type="submit">Save card</button>
+            </div>
+        </form>
+    </section>
 </section>
 
 <section class="section-header">
@@ -29,36 +67,6 @@
 </section>
 
 {% if cards %}
-<form class="selection-panel" method="GET">
-    <input type="hidden" name="deck_id" value="{{ deck.id }}">
-    <div class="selection-header">
-        <div>
-            <p class="eyebrow">Customize session</p>
-            <h2>Choose words from this deck</h2>
-            <p>Select a few terms or keep every word checked for a full-deck session.</p>
-        </div>
-        <div class="selection-actions">
-            <button class="button button-ghost" type="button" data-select-all>All words</button>
-            <button class="button button-primary" type="submit" formaction="{{ url_for('study') }}">Study selected</button>
-            <button class="button button-secondary" type="submit" formaction="{{ url_for('test') }}">Test selected</button>
-        </div>
-    </div>
-    <section class="card-grid selectable-card-grid">
-    {% for card in cards %}
-    <label class="card-item selectable-card">
-        <input class="selection-checkbox" type="checkbox" name="card_ids" value="{{ card.id }}" checked>
-        <span class="selection-check" aria-hidden="true"></span>
-        <div class="card-meta">
-            <span class="chip">Card</span>
-            <span class="deck-count">Selected</span>
-        </div>
-        <h3>{{ card.term }}</h3>
-        <p>{{ card.definition }}</p>
-    </label>
-    {% endfor %}
-    </section>
-</form>
-
 <section class="card-grid manage-card-grid">
     {% for card in cards %}
     <article class="card-item">
@@ -73,19 +81,6 @@
     </article>
     {% endfor %}
 </section>
-
-<script>
-const selectAllButton = document.querySelector('[data-select-all]');
-const selectionCheckboxes = Array.from(document.querySelectorAll('.selection-checkbox'));
-
-if (selectAllButton) {
-    selectAllButton.addEventListener('click', () => {
-        selectionCheckboxes.forEach((checkbox) => {
-            checkbox.checked = true;
-        });
-    });
-}
-</script>
 {% else %}
 <section class="empty-state">
     <p class="eyebrow">No cards yet</p>

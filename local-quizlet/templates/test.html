@@ -17,6 +17,10 @@ document.addEventListener('submit', async (event) => {
         return;
     }
 
+    if (form.matches('[data-normal-submit]')) {
+        return;
+    }
+
     event.preventDefault();
 
     const submitButton = form.querySelector('button[type="submit"]');
@@ -78,5 +82,37 @@ document.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('load', bindTestShell);
+
+const selectAllCheckbox = document.querySelector('[data-select-all]');
+const selectionCheckboxes = Array.from(document.querySelectorAll('.selection-checkbox'));
+const selectionCount = document.querySelector('[data-selection-count]');
+
+function updateSelectionStatus() {
+    if (!selectAllCheckbox || !selectionCount) {
+        return;
+    }
+
+    const checkedCount = selectionCheckboxes.filter((checkbox) => checkbox.checked).length;
+    const allSelected = checkedCount === selectionCheckboxes.length;
+
+    selectAllCheckbox.checked = allSelected;
+    selectAllCheckbox.indeterminate = checkedCount > 0 && !allSelected;
+    selectionCount.textContent = allSelected ? 'All' : `${checkedCount} selected`;
+}
+
+if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', () => {
+        selectionCheckboxes.forEach((checkbox) => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+        updateSelectionStatus();
+    });
+}
+
+selectionCheckboxes.forEach((checkbox) => {
+    checkbox.addEventListener('change', updateSelectionStatus);
+});
+
+updateSelectionStatus();
 </script>
 {% endblock %}

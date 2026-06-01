@@ -258,6 +258,83 @@ h3 {
     line-height: 0.96;
 }
 
+.deck-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.deck-title-row h1 {
+    min-width: 0;
+}
+
+.deck-settings {
+    position: relative;
+    flex: 0 0 auto;
+    margin-top: 8px;
+}
+
+.deck-settings summary {
+    list-style: none;
+}
+
+.deck-settings summary::-webkit-details-marker {
+    display: none;
+}
+
+.settings-icon-button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(5, 13, 25, 0.36);
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.settings-icon-button:hover,
+.settings-icon-button:focus-visible {
+    transform: translateY(-1px);
+    border-color: rgba(114, 156, 255, 0.28);
+    color: var(--text);
+    outline: none;
+}
+
+.settings-icon-button span {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.deck-settings-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 10;
+    display: grid;
+    gap: 12px;
+    width: min(320px, calc(100vw - 48px));
+    padding: 16px;
+    border: 1px solid rgba(180, 203, 255, 0.12);
+    border-radius: 18px;
+    background: rgba(8, 18, 33, 0.98);
+    box-shadow: var(--shadow);
+}
+
+.deck-settings-panel label {
+    display: grid;
+    gap: 8px;
+}
+
+.deck-settings-panel label span {
+    color: var(--text-soft);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
 .hero-copy,
 .section-copy,
 .info-panel p,
@@ -442,6 +519,24 @@ h3 {
     flex-wrap: wrap;
 }
 
+.selection-summary {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    gap: 8px;
+    color: var(--text-soft);
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.all-selection-checkbox {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 4px;
+    accent-color: var(--primary);
+}
+
 .selectable-card-grid {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
@@ -449,6 +544,7 @@ h3 {
 .selectable-card {
     position: relative;
     cursor: pointer;
+    padding-right: 58px;
     transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
 }
 
@@ -749,10 +845,20 @@ select {
 @media (max-width: 860px) {
     .topbar,
     .section-header,
-    .selection-header,
     .hero,
     .split-layout {
         grid-template-columns: 1fr;
+    }
+
+    .selection-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .selection-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
     }
 
     .topbar {
@@ -934,6 +1040,10 @@ select {
     .card-item,
     .deck-card {
         padding: 18px;
+    }
+
+    .selectable-card {
+        padding-right: 54px;
     }
 
     .card-meta {

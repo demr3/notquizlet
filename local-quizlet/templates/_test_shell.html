@@ -5,7 +5,7 @@
             <h1>{% if selected_deck %}{{ selected_deck.name }}{% else %}Choose a deck before you test{% endif %}</h1>
             <p class="section-copy">{% if selected_deck %}Your answer is checked with a similarity score, so small typos can still pass.{% else %}Pick one deck so your test session stays on a single vocabulary set.{% endif %}</p>
         </div>
-        <a class="button button-ghost" href="{% if selected_deck %}{{ url_for('study', deck_id=selected_deck.id, selected_card_ids=selected_card_ids) }}{% else %}{{ url_for('study') }}{% endif %}">Switch to study mode</a>
+        <a class="button button-ghost" href="{% if selected_deck %}{{ url_for('study', deck_id=selected_deck.id) }}{% else %}{{ url_for('study') }}{% endif %}">Switch to study mode</a>
     </div>
 
     {% if not selected_deck %}
@@ -34,6 +34,48 @@
         <a class="button button-primary" href="{{ url_for('add_card') }}">Add cards</a>
     </section>
     {% endif %}
+    {% elif test_selection %}
+    {% if cards %}
+    <form class="selection-panel" method="GET" action="{{ url_for('test') }}" data-normal-submit>
+        <input type="hidden" name="deck_id" value="{{ selected_deck.id }}">
+        <input type="hidden" name="start" value="1">
+        <input type="hidden" name="selection_submitted" value="1">
+        <div class="selection-header">
+            <div>
+                <p class="eyebrow">Customize session</p>
+                <h2>Choose words from this deck</h2>
+                <p>Select a few terms or keep every word checked for a full-deck test.</p>
+            </div>
+            <div class="selection-actions">
+                <button class="button button-primary" type="submit" data-test-action>Start test</button>
+            </div>
+        </div>
+        <label class="selection-summary">
+            <input class="all-selection-checkbox" type="checkbox" data-select-all checked>
+            <span data-selection-count>All</span>
+        </label>
+        <section class="card-grid selectable-card-grid">
+        {% for card in cards %}
+        <label class="card-item selectable-card">
+            <input class="selection-checkbox" type="checkbox" name="card_ids" value="{{ card.id }}" checked>
+            <span class="selection-check" aria-hidden="true"></span>
+            <div class="card-meta">
+                <span class="chip">Card</span>
+            </div>
+            <h3>{{ card.term }}</h3>
+            <p>{{ card.definition }}</p>
+        </label>
+        {% endfor %}
+        </section>
+    </form>
+    {% else %}
+    <section class="empty-state">
+        <p class="eyebrow">Nothing to test</p>
+        <h2>This deck is empty.</h2>
+        <p>Add vocabulary here first, then come back to run a recall test.</p>
+        <a class="button button-primary" href="{{ url_for('deck_detail', deck_id=selected_deck.id) }}#add-card">Add cards</a>
+    </section>
+    {% endif %}
     {% elif session_complete %}
     <section class="result-banner result-good">
         <strong>Session complete</strong>
@@ -44,7 +86,7 @@
         <p class="prompt-label">Finished</p>
         <h2>{{ correct_count }} / {{ total_cards }} correct</h2>
         <div class="form-actions">
-            <a class="button button-primary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids) }}">Start again</a>
+            <a class="button button-primary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids, start=1) }}">Start again</a>
             <a class="button button-secondary" href="{{ url_for('deck_detail', deck_id=selected_deck.id) }}">Back to deck</a>
         </div>
     </section>
@@ -53,7 +95,7 @@
         <p class="eyebrow">Nothing to test</p>
         <h2>This deck is empty.</h2>
         <p>Add vocabulary here first, then come back to run a recall test.</p>
-        <a class="button button-primary" href="{{ url_for('add_card', deck_id=selected_deck.id) }}">Add cards</a>
+        <a class="button button-primary" href="{{ url_for('deck_detail', deck_id=selected_deck.id) }}#add-card">Add cards</a>
     </section>
     {% else %}
     <section class="result-banner {{ 'result-good' if correct else 'result-bad' if result else '' }}">
@@ -84,7 +126,7 @@
             <input type="hidden" name="answered_count" value="{{ answered_count }}">
             <div class="form-actions">
                 <button class="button button-primary" type="submit">Continue</button>
-                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids) }}">Restart deck</a>
+                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids, start=1) }}">Restart deck</a>
             </div>
         </form>
         {% else %}
@@ -102,7 +144,7 @@
             </label>
             <div class="form-actions">
                 <button class="button button-primary" type="submit">Check answer</button>
-                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids) }}">Restart deck</a>
+                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids, start=1) }}">Restart deck</a>
             </div>
         </form>
         {% endif %}

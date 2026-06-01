@@ -353,7 +353,37 @@ def create_deck():
         conn.commit()
         conn.close()
         return redirect(url_for("deck_detail", deck_id=deck_id))
-    return redirect(url_for("index"))
+    return redirect(url_for("add_card"))
+
+
+@app.route("/deck/<int:deck_id>/rename", methods=["POST"])
+def rename_deck(deck_id):
+    name = request.form.get("name", "").strip()
+    conn = get_db()
+    active_profile_id = get_active_profile_id(conn)
+    deck = get_deck(conn, deck_id, active_profile_id)
+    if not deck:
+        conn.close()
+        return redirect(url_for("index"))
+
+    if not name:
+        flash("Deck name cannot be blank.")
+        conn.close()
+        return redirect(url_for("deck_detail", deck_id=deck_id))
+
+    try:
+        conn.execute(
+            "UPDATE decks SET name = ? WHERE id = ? AND profile_id = ?",
+            (name, deck_id, active_profile_id),
+        )
+        conn.commit()
+        flash("Deck name updated.")
+    except sqlite3.IntegrityError:
+        flash("A deck with that name already exists.")
+    finally:
+        conn.close()
+
+    return redirect(url_for("deck_detail", deck_id=deck_id))
 
 
 @app.route("/api/decks/import-csv", methods=["POST"])
@@ -415,11 +445,11 @@ def upload_deck_csv():
     uploaded_file = request.files.get("csv_file")
     if not uploaded_file or not uploaded_file.filename:
         flash("Choose a CSV file to upload.")
-        return redirect(url_for("index"))
+        return redirect(url_for("add_card"))
 
     if not uploaded_file.filename.lower().endswith(".csv"):
         flash("Upload a .csv file.")
-        return redirect(url_for("index"))
+        return redirect(url_for("add_card"))
 
     submitted_deck_name = request.form.get("deck_name", "").strip()
     deck_name = submitted_deck_name or os.path.splitext(os.path.basename(uploaded_file.filename))[0].strip()
@@ -431,7 +461,7 @@ def upload_deck_csv():
     )
     if not imported_rows:
         flash("No valid cards found. Use term,definition columns or deck,term,definition columns.")
-        return redirect(url_for("index"))
+        return redirect(url_for("add_card"))
 
     conn = get_db()
     active_profile_id = get_active_profile_id(conn)
@@ -490,7 +520,6 @@ def add_card():
             conn.close()
             return redirect(url_for("deck_detail", deck_id=deck_id))
 
-        decks = get_all_decks(conn, active_profile_id)
         selected_deck_id = deck_id
 
     conn.close()
@@ -520,20 +549,18 @@ def study():
     active_profile_id = get_active_profile_id(conn)
     decks = get_all_decks(conn, active_profile_id)
     selected_deck_id = request.args.get("deck_id", type=int)
-    selected_card_ids = get_requested_card_ids()
     selected_deck = get_deck(conn, selected_deck_id, active_profile_id) if selected_deck_id else None
     cards = []
     if selected_deck:
         cards = conn.execute("SELECT * FROM cards WHERE deck_id = ?", (selected_deck_id,)).fetchall()
     conn.close()
-    cards = filter_selected_cards(list(cards), selected_card_ids)
+    cards = list(cards)
     random.shuffle(cards)
     return render_template(
         "study.html",
         cards=cards,
         decks=decks,
         selected_deck=selected_deck,
-        selected_card_ids=",".join(str(card_id) for card_id in selected_card_ids),
     )
 
 
@@ -551,10 +578,25 @@ def test():
         conn.close()
         return render_test_template(decks=decks, selected_deck=None, result=False)
 
-    cards = filter_selected_cards(
-        list(conn.execute("SELECT * FROM cards WHERE deck_id = ?", (selected_deck_id,)).fetchall()),
-        selected_card_ids,
-    )
+    all_cards = list(conn.execute("SELECT * FROM cards WHERE deck_id = ?", (selected_deck_id,)).fetchall())
+    if request.method == "GET" and not request.args.get("start"):
+        conn.close()
+        return render_test_template(
+            decks=decks,
+            selected_deck=selected_deck,
+            cards=all_cards,
+            test_selection=True,
+            result=False,
+            selected_card_ids=selected_card_ids_value,
+        )
+
+    if request.values.get("selection_submitted") and not selected_card_ids:
+        cards = []
+    else:
+        cards = filter_selected_cards(
+            all_cards,
+            selected_card_ids,
+        )
     conn.close()
     if not cards:
         return render_test_template(

@@ -1,44 +1,62 @@
 {% extends "base.html" %}
-{% block title %}Add Card - Lexlet{% endblock %}
+{% block title %}Add - Lexlet{% endblock %}
 {% block content %}
-<section class="split-layout">
+<section class="hero">
+    <div>
+        <p class="eyebrow">Add</p>
+        <h1>Create or import decks.</h1>
+        <p class="hero-copy">Start a new vocabulary set here. Add individual words from inside the deck they belong to.</p>
+    </div>
+    <aside class="hero-panel">
+        <p>Your library</p>
+        <strong>{{ decks|length }}</strong>
+        <span>{{ "deck" if decks|length == 1 else "decks" }} available</span>
+    </aside>
+</section>
+
+<section class="split-layout compact-split">
     <div class="info-panel">
-        <p class="eyebrow">New card</p>
-        <h1>Add vocabulary without friction.</h1>
-        <p>Use the front as the answer you want to recall and the definition as the clue or explanation you want to study from.</p>
+        <p class="eyebrow">Create deck</p>
+        <h1>Start a new vocabulary set.</h1>
+        <p>Decks keep terms grouped by topic so your study sessions stay focused.</p>
         <div class="info-stack">
-            <div class="info-chip">Short terms work best</div>
-            <div class="info-chip">Definitions can be full sentences</div>
-            <div class="info-chip">Cards show instantly in your library</div>
+            <div class="info-chip">Classes</div>
+            <div class="info-chip">Chapters</div>
+            <div class="info-chip">Exam sets</div>
         </div>
     </div>
-
     <section class="form-panel">
-        <form class="stack-form" method="POST">
+        <form class="stack-form" action="{{ url_for('create_deck') }}" method="POST">
             <label>
-                <span>Existing deck</span>
-                <select name="deck_id">
-                    <option value="">Select a deck</option>
-                    {% for deck in decks %}
-                    <option value="{{ deck.id }}" {% if selected_deck_id == deck.id %}selected{% endif %}>{{ deck.name }} ({{ deck.card_count }})</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label>
-                <span>Or create a new deck</span>
-                <input name="new_deck_name" placeholder="ex. Biology Quiz 2">
-            </label>
-            <label>
-                <span>Term</span>
-                <input name="term" placeholder="ex. ephemeral" required>
-            </label>
-            <label>
-                <span>Definition / clue</span>
-                <textarea name="definition" placeholder="Short-lived; lasting for a very brief time." required></textarea>
+                <span>Deck name</span>
+                <input name="name" placeholder="ex. Spanish Chapter 3" required>
             </label>
             <div class="form-actions">
-                <button class="button button-primary" type="submit">Save card</button>
+                <button class="button button-primary" type="submit">Create deck</button>
                 <a class="button button-secondary" href="{{ url_for('index') }}">Back to library</a>
+            </div>
+        </form>
+    </section>
+</section>
+
+<section class="split-layout compact-split">
+    <div class="info-panel">
+        <p class="eyebrow">Import deck</p>
+        <h1>Upload cards from a CSV.</h1>
+        <p>Use term and definition columns for one deck, or include a deck column to import multiple decks at once.</p>
+    </div>
+    <section class="form-panel">
+        <form class="stack-form" action="{{ url_for('upload_deck_csv') }}" method="POST" enctype="multipart/form-data">
+            <label>
+                <span>Deck name</span>
+                <input name="deck_name" placeholder="Defaults to the CSV file name">
+            </label>
+            <label>
+                <span>CSV file</span>
+                <input type="file" name="csv_file" accept=".csv,text/csv" required>
+            </label>
+            <div class="form-actions">
+                <button class="button button-primary" type="submit">Upload CSV</button>
             </div>
         </form>
     </section>
