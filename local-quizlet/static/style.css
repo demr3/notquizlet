@@ -782,6 +782,34 @@ select {
     font-size: clamp(1.5rem, 2vw, 2rem);
 }
 
+.score-restart-button {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(5, 13, 25, 0.36);
+    color: var(--text-soft);
+    transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.score-restart-button:hover,
+.score-restart-button:focus-visible {
+    transform: translateY(-1px);
+    border-color: rgba(114, 156, 255, 0.28);
+    color: var(--text);
+    outline: none;
+}
+
+.score-restart-button span {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
 .result-banner {
     display: grid;
     gap: 4px;

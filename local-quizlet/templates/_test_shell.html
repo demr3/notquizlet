@@ -99,6 +99,9 @@
     </section>
     {% else %}
     <section class="result-banner {{ 'result-good' if correct else 'result-bad' if result else '' }}">
+        <a class="score-restart-button" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids, start=1) }}" aria-label="Restart test" title="Restart test">
+            <span aria-hidden="true">&#8635;</span>
+        </a>
         <strong>Score</strong>
         <span>{{ correct_count }} / {{ total_cards }} correct</span>
         <p>{{ answered_count }} of {{ total_cards }} answered</p>
@@ -126,7 +129,6 @@
             <input type="hidden" name="answered_count" value="{{ answered_count }}">
             <div class="form-actions">
                 <button class="button button-primary" type="submit">Continue</button>
-                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids, start=1) }}">Restart deck</a>
             </div>
         </form>
         {% else %}
@@ -144,7 +146,6 @@
             </label>
             <div class="form-actions">
                 <button class="button button-primary" type="submit">Check answer</button>
-                <a class="button button-secondary" href="{{ url_for('test', deck_id=selected_deck.id, selected_card_ids=selected_card_ids, start=1) }}">Restart deck</a>
             </div>
         </form>
         {% endif %}
